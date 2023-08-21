@@ -13,8 +13,8 @@
 		</sampler>
 
 		<film type="hdrfilm">
-			<integer name="width" value="1280"/>
-			<integer name="height" value="960"/>
+			<integer name="width" value="640"/>
+			<integer name="height" value="480"/>
 		</film>
 	</sensor>
 
