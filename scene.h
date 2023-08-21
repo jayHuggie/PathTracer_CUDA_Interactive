@@ -117,7 +117,7 @@ struct GPUScene {
         // Set root node
         bvh_root_index = scene.bvh_root_id;
          
-        printf("index is %d\n", bvh_root_index);
+        //printf("index is %d\n", bvh_root_index);
     
 /*
     // CHECK!

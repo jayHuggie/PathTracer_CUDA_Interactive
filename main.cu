@@ -85,10 +85,10 @@ int main(int argc, char* argv[]) {
 
     int nx = gpu_scene.width;
     int ny = gpu_scene.height;
-    std::cout << nx <<" and " << ny << std::endl;
+    std::cout << "Resolution: "<< nx <<" x " << ny << std::endl;
 
     int sample = gpu_scene.samples_per_pixel;
-    std::cout << "sample number is " << sample << std::endl;
+    std::cout << "Sample number is " << sample << std::endl;
 
     int num_pixels = nx * ny;
     size_t fb_size = num_pixels * sizeof(float3);
@@ -115,7 +115,8 @@ int main(int argc, char* argv[]) {
 
     // Compute camera ray data on CPU side
     CameraRayData cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
-    printf("preparing to render\n");
+    printf("Preparing to render!\n\n");
+    
     // Render our buffer
     render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
 
@@ -124,7 +125,7 @@ int main(int argc, char* argv[]) {
   
     stop = clock();
     double timer_seconds1 = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::cerr << "GPU took " << timer_seconds1 << " seconds.\n";
+    std::cerr << "GPU rendering took " << timer_seconds1 << " seconds.\n";
 
     start = clock();
 
@@ -161,7 +162,7 @@ int main(int argc, char* argv[]) {
 
     stop = clock();
     double timer_seconds2 = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::cerr << "rgb took " << timer_seconds2 << " seconds.\n";
+    std::cerr << "Image to png file took " << timer_seconds2 << " seconds.\n";
 
     std::cerr << "Total time took " << timer_seconds1 + timer_seconds2 << " seconds.\n";
 

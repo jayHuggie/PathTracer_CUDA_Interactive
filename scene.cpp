@@ -115,7 +115,7 @@ Scene::Scene(const ParsedScene &scene) :
     for (const ParsedLight &parsed_light : scene.lights) {
         if (auto *point_light = std::get_if<ParsedPointLight>(&parsed_light)) {
             lights.push_back(PointLight{point_light->intensity, point_light->position});
-            printf("Point Light information: intensity (%f, %f, %f), position (%f, %f, %f)\n", point_light->intensity.x, point_light->intensity.y, point_light->intensity.z, point_light->position.x, point_light->position.y, point_light->position.z);
+            //printf("Point Light information: intensity (%f, %f, %f), position (%f, %f, %f)\n", point_light->intensity.x, point_light->intensity.y, point_light->intensity.z, point_light->position.x, point_light->position.y, point_light->position.z);
         } 
     }
 
