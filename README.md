@@ -20,7 +20,7 @@ This 512 x 512 Cornell Box with 500 samples per pixel took 109 seconds to render
 make
 ```
 
-in the home directory. (If the program could not find CUDA, adjust the CUDA_PATH in the Makefile)
+in the home directory. (If the program cannot find CUDA, adjust the CUDA_PATH in the Makefile)
 
 2. After compiling, use the command:
 ```
@@ -30,7 +30,8 @@ in the home directory. (If the program could not find CUDA, adjust the CUDA_PATH
 ```
 ./torrey scenes/cbox/cbox.xml
 ```
-The resolution and sample size can be adjusted by changing the values of the xml files.
+The resolution and sample size can be adjusted by changing the values of the xml files.  <br /> <br />
+3. The rendered image can be found in the '**output**' folder under the name '**img.png**'!
 
 # Tested on:
 * System: Ubuntu 23.04
