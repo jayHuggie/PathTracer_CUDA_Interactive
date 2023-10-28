@@ -24,9 +24,9 @@ in the home directory. (If the program cannot find CUDA, adjust the CUDA_PATH in
 
 2. After compiling, use the command:
 ```
-./torrey scenes/spheres/scene3.xml
+./torrey scenes/spheres/scene1.xml
 ```
-'scenes/spheres/scene3.xml' after ./torrey is just an example. Additional scenes can also be rendered. The xml file can be located in various folders within the ‘scenes’ folder like:
+'scenes/spheres/scene1.xml' after ./torrey is just an example. Additional scenes can also be rendered. The xml file can be located in various folders within the ‘scenes’ folder like:
 ```
 ./torrey scenes/cbox/cbox.xml
 ```
