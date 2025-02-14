@@ -1,6 +1,6 @@
-## A GPU Path Tracer written in CUDA C++ with BVH acceleration.
+## A GPU Path Tracer written in CUDA C++ with BVH acceleration. (2025 Updated Version)
 <img src="/sample_images/cbox.png" alt="cbox" title="Cornell Box example" width="500"/>
-This 512 x 512 Cornell Box with 500 samples per pixel took 109 seconds to render.
+This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 109 seconds!)
 
 # Features:
 
@@ -34,23 +34,23 @@ The resolution and sample size can be adjusted by changing the values of the xml
 3. The rendered image can be found in the '**output**' folder under the name '**img.png**'!
 
 # Tested on:
-* System: Ubuntu 23.04
+* System: Ubuntu 24.04.1 LTS
 * CPU: Intel i7-13700k
 * GPU: RTX 3080
-* Nvidia Driver Version: 535.86.10
-* CUDA Version: 12.2
+* Nvidia Driver Version: 560.35.05
+* CUDA Version: 12.6
 
 # More sample images!
 
 ### Spheres_Scene1 (Diffuse and Phong spheres)
 
 <img src="/sample_images/scene1_phong.png" alt="scene1" width="330"/>
-640 x 480 pixels with 500 samples per pixel. Render time: 10 seconds
+640 x 480 pixels with 500 samples per pixel. Render time: 0.15 seconds! (Previously took 10 seconds)
 
 ### Buddha
 
 <img src="/sample_images/buddha.png" alt="buddha" width="330"/>
-640 x 480 pixels with 500 samples per pixel. Render time: 44 seconds (The Buddha has 1087474 triangles)
+640 x 480 pixels with 500 samples per pixel. Render time: 16.5 seconds (The Buddha has 1087474 triangles, Prev. 44 sec)
 
 ### Party (Bunny, Buddha, Armadillo, and Dragon)
 
