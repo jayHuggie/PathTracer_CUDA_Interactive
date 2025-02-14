@@ -30,6 +30,10 @@ in the home directory. (If the program cannot find CUDA, adjust the CUDA_PATH in
 ```
 ./torrey scenes/cbox/cbox.xml
 ```
+or like:
+```
+./torrey scenes/budda/buddha.xml
+```
 The resolution and sample size can be adjusted by changing the values of the xml files.  <br /> <br />
 3. The rendered image can be found in the '**output**' folder under the name '**img.png**'!
 
@@ -64,4 +68,4 @@ This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to rende
 (The bunny has 144046 triangles)
 
 # Coming Soon..
-Image Textures
+Image Textures!
