@@ -1,9 +1,6 @@
 ## A GPU Path Tracer written in CUDA C++ with BVH acceleration. (2025 Updated Version)
-<img src="/sample_images/cbox.png" alt="cbox" title="Cornell Box example" width="400"/> <img src="/sample_images/Dragon_1000.png" alt="dragon_1000" title="Dragon example" width="400"/>
-This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 109 seconds!)
-
 <img src="/sample_images/Dragon_1000.png" alt="dragon_1000" title="Dragon example" width="500"/>
-This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 109 seconds!)
+This 512 x 512 Dragon in a Cornell Box with 1000 samples per pixel took 20.74 seconds to render. 
 
 # Features:
 
@@ -44,6 +41,11 @@ The resolution and sample size can be adjusted by changing the values of the xml
 * CUDA Version: 12.6
 
 # More sample images!
+
+### Cornell Box
+
+<img src="/sample_images/cbox.png" alt="cbox" title="Cornell Box example" width="330"/>
+This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 42 seconds!)
 
 ### Spheres_Scene1 (Diffuse and Phong spheres)
 
