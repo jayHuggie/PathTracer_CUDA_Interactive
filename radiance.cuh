@@ -23,7 +23,6 @@ __device__ float3 radiance(const GPUScene &scene, Ray ray, curandState &state) {
     float3 throughput = make_float3(1.0f, 1.0f, 1.0f);
     for (int depth = 0; depth < MAX_DEPTH; ++depth) {
         OptionalIntersection hit_isect = intersect(scene, ray);
-        //OptionalIntersection hit_isect = intersect(scene, ray);
 
         if (!hit_isect.valid) {
             L += throughput * scene.background_color;
