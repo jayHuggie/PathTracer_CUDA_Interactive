@@ -2,6 +2,9 @@
 <img src="/sample_images/cbox.png" alt="cbox" title="Cornell Box example" width="500"/>
 This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 109 seconds!)
 
+<img src="/sample_images/Dragon_1000.png" alt="dragon_1000" title="Dragon example" width="500"/>
+This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 109 seconds!)
+
 # Features:
 
 * Parses a scene in Mitsuba XML file format.
