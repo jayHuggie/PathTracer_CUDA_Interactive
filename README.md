@@ -57,8 +57,11 @@ This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to rende
 <img src="/sample_images/buddha.png" alt="buddha" width="330"/>
 640 x 480 pixels with 500 samples per pixel. Render time: 16.5 seconds (The Buddha has 1087474 triangles, Prev. 44 sec)
 
-### Party (Bunny, Buddha, Armadillo, and Dragon)
+### Bunny
 
-<img src="/sample_images/party.png" alt="party" width="330"/>
-640 x 480 pixels with 500 samples per pixel. Render time: 310 seconds  <br />
-(The bunny has 144046 triangles, the dragon has 871306, and the armadillo has 212574)
+<img src="/sample_images/bunny.png" alt="bunny" width="330"/>
+640 x 480 pixels with 500 samples per pixel. Render time: 5.23 seconds  <br />
+(The bunny has 144046 triangles)
+
+# Coming Soon..
+Image Textures
