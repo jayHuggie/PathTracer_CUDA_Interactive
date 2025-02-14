@@ -3,8 +3,8 @@ HOST_COMPILER  = g++
 NVCC           = $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # select one of these for Debug vs. Release
-NVCC_DBG       = -g -G
-#NVCC_DBG       =
+#NVCC_DBG       = -g -G
+NVCC_DBG       =
 
 HOST_COMPILER_FLAGS = -m64 -std=c++17 -I$(CUDA_PATH)/include 
 NVCCFLAGS = $(NVCC_DBG) -m64 -std=c++17 
