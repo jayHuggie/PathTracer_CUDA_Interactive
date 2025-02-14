@@ -28,6 +28,7 @@ int construct_bvh(const std::vector<BBoxWithID> &boxes,
     for (const BBoxWithID &b : boxes) {
         big_box = merge(big_box, b.box);
     }
+
     int axis = largest_axis(big_box);
     std::vector<BBoxWithID> local_boxes = boxes;
     std::sort(local_boxes.begin(), local_boxes.end(),
