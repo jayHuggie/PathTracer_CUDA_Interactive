@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     float3 *fb;
     checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
 
-    int tx = 8;
+    int tx = 32;
     int ty = 8;
 
     start = clock();
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
     double timer_seconds2 = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "Image to png file took " << timer_seconds2 << " seconds.\n";
 
-    std::cerr << "Total time took " << timer_seconds1 + timer_seconds2 << " seconds.\n";
+    std::cerr << "Total time took " << timer_seconds0 + timer_seconds1 + timer_seconds2 << " seconds.\n";
 
 
     checkCudaErrors(cudaFree(fb));
