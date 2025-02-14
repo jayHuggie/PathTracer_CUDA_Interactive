@@ -147,14 +147,7 @@ Scene::Scene(const ParsedScene &scene) :
     // Compute and print maximum BVH depth
     int maxDepth = computeMaxDepth(CPU_bvh_nodes, bvh_root_id);
     printf("Maximum BVH depth: %d\n", maxDepth);
- /* 
-    for (const BVHNode& node : CPU_bvh_nodes) {
-        printf("Node data: BBox p_min=(%f, %f, %f), p_max=(%f, %f, %f), left_id=%d, right_id=%d, primitive_id=%d\n", 
-               node.box.p_min.x, node.box.p_min.y, node.box.p_min.z,
-               node.box.p_max.x, node.box.p_max.y, node.box.p_max.z,
-               node.left_node_id, node.right_node_id, node.primitive_id);
-    }
-*/
+
     cleanupHostMemory();
 
 }
