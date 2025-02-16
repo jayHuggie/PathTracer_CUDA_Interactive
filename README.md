@@ -1,6 +1,8 @@
 ## A GPU Path Tracer written in CUDA C++ with BVH acceleration. (2025 Updated Version)
 <img src="/sample_images/Dragon_1000.png" alt="dragon_1000" title="Dragon example" width="500"/>
-This 512 x 512 Dragon in a Cornell Box with 1000 samples per pixel took 20.74 seconds to render. (The Dragon has 871,306 triangles!)
+This 512 x 512 Dragon in a Cornell Box with 1000 samples per pixel took 20.74 seconds to render.
+
+(The Dragon has 871,306 triangles!)
 
 # Features:
 
