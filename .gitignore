@@ -10,3 +10,7 @@ scene.o
 transform.o
 torrey
 output/img.png
+
+# macOS system files
+.DS_Store
+.AppleDouble
