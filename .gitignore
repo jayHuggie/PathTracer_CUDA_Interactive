@@ -1,0 +1,12 @@
+bvh.o
+compute_normals.o
+main.o
+parse_obj.o
+parse_ply.o
+parse_scene.o
+parse_serialized.o
+print_scene.o
+scene.o
+transform.o
+torrey
+output/img.png

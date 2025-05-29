@@ -1,13 +1,18 @@
 CUDA_PATH     ?= /usr/local/cuda
-HOST_COMPILER  = g++
+HOST_COMPILER  = g++-12
 NVCC           = $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # select one of these for Debug vs. Release
 #NVCC_DBG       = -g -G
 NVCC_DBG       =
 
+# OpenGL dependencies
+GLFW_LIBS = -lglfw
+GLEW_LIBS = -lGLEW
+OPENGL_LIBS = -lGL
+
 HOST_COMPILER_FLAGS = -m64 -std=c++17 -I$(CUDA_PATH)/include 
-NVCCFLAGS = $(NVCC_DBG) -m64 -std=c++17 
+NVCCFLAGS = $(NVCC_DBG) -m64 -std=c++17 -allow-unsupported-compiler
 GENCODE_FLAGS  = -gencode arch=compute_86,code=sm_86
 
 INCS = bbox.cuh bvh.cuh 3rdparty/stb_image.h 3rdparty/stb_image_write.h camera.cuh compute_normals.h frame.h flexception.h intersection.h light.h material.h matrix.h parse_obj.h parse_ply.h parse_scene.h parse_serialized.h print_scene.h radiance.cuh texture.h transform.h cutil_math.h ray.h torrey.cuh scene.h 3rdparty/miniz.h 3rdparty/pugiconfig.hpp 3rdparty/pugixml.hpp 3rdparty/stb_image.h 3rdparty/tinyexr.h 3rdparty/tinyply.h shape.cuh
@@ -26,7 +31,7 @@ CPP_OBJS := $(patsubst %.cpp, %.o, $(filter %.cpp, $(SRCS)))
 	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -c $< -o $@
 
 torrey: $(CU_OBJS) $(CPP_OBJS)
-	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o torrey $(CU_OBJS) $(CPP_OBJS)
+	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o torrey $(CU_OBJS) $(CPP_OBJS) $(GLFW_LIBS) $(GLEW_LIBS) $(OPENGL_LIBS)
 
 out.ppm: torrey
 	rm -f out.ppm
