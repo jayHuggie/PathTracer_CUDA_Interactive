@@ -95,9 +95,21 @@ int g_ny = 0;
 bool g_camera_changed = false;
 Camera g_current_camera;
 
+// Mouse control variables
+static bool g_first_mouse = true;
+static float g_last_x = 0.0f;
+static float g_last_y = 0.0f;
+static bool g_mouse_pressed = false;
+static float g_yaw = -90.0f;   // Yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right
+static float g_pitch = 0.0f;   // Pitch starts at 0.0 degrees
+static float g_mouse_sensitivity = 0.1f;
+static float g_camera_speed = 0.5f;
+
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -279,6 +291,10 @@ int main(int argc, char* argv[]) {
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
+    // Set up mouse callbacks
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+
     // Render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -390,6 +406,82 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void processInput(GLFWwindow* window) {
+    ImGuiIO& io = ImGui::GetIO();
+    
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // Camera movement with WASD keys
+    float3 camera_front = normalize(g_current_camera.lookat - g_current_camera.lookfrom);
+    float3 camera_right = normalize(cross(camera_front, g_current_camera.up));
+    
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        g_current_camera.lookfrom += camera_front * g_camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        g_current_camera.lookfrom -= camera_front * g_camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        g_current_camera.lookfrom -= camera_right * g_camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        g_current_camera.lookfrom += camera_right * g_camera_speed;
+    
+    // Update lookat point to maintain direction
+    g_current_camera.lookat = g_current_camera.lookfrom + camera_front;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    // Always update ImGui mouse state
+    if (button >= 0 && button < ImGuiMouseButton_COUNT)
+        io.MouseDown[button] = action == GLFW_PRESS;
+
+    // Handle camera controls
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        g_mouse_pressed = true;
+        g_first_mouse = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        g_mouse_pressed = false;
+    }
+}
+
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    // Always update ImGui mouse position
+    io.MousePos = ImVec2((float)xpos, (float)ypos);
+
+    // Handle camera rotation
+    if (g_mouse_pressed) {
+        if (g_first_mouse) {
+            g_last_x = xpos;
+            g_last_y = ypos;
+            g_first_mouse = false;
+        }
+
+        float xoffset = xpos - g_last_x;
+        float yoffset = g_last_y - ypos; // Reversed since y-coordinates go from bottom to top
+        g_last_x = xpos;
+        g_last_y = ypos;
+
+        xoffset *= g_mouse_sensitivity;
+        yoffset *= g_mouse_sensitivity;
+
+        g_yaw += xoffset;
+        g_pitch += yoffset;
+
+        // Constrain pitch to avoid flipping
+        if (g_pitch > 89.0f) g_pitch = 89.0f;
+        if (g_pitch < -89.0f) g_pitch = -89.0f;
+
+        // Calculate new camera position and look-at point
+        float3 direction;
+        direction.x = cos(radians(g_yaw)) * cos(radians(g_pitch));
+        direction.y = sin(radians(g_pitch));
+        direction.z = sin(radians(g_yaw)) * cos(radians(g_pitch));
+        direction = normalize(direction);
+
+        // Update camera
+        g_current_camera.lookat = g_current_camera.lookfrom + direction;
+    }
 }
