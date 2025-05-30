@@ -12,6 +12,7 @@
 #include "camera.cuh"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "imgui_impl.h"
 
 #define STBI_MSC_SECURE_CRT
 #define STB_IMAGE_IMPLEMENTATION
@@ -89,6 +90,10 @@ unsigned int SCR_HEIGHT = 600;  // Default value, will be updated
 // Global variables for image dimensions
 int g_nx = 0;
 int g_ny = 0;
+
+// Add these global variables
+bool g_camera_changed = false;
+Camera g_current_camera;
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -262,35 +267,72 @@ int main(int argc, char* argv[]) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // Convert frame buffer to RGB
-    unsigned char* arr = new unsigned char[nx * ny * 3];
-    for (int j = 0; j < ny; ++j) {
-        for (int i = 0; i < nx; ++i) {
-            int pixel_index = j * nx + i;
+    // Initialize ImGui
+    ImGuiManager::Init(window);
 
-            float3 color = fb[pixel_index];
+    // Store initial camera state and samples
+    g_current_camera = gpu_scene.camera;
+    ImGuiManager::SetInitialState(g_current_camera, sample);
 
-            // Apply gamma correction
-            color.x = sqrt(color.x);
-            color.y = sqrt(color.y);
-            color.z = sqrt(color.z);
-
-            int arr_index = pixel_index * 3;
-            arr[arr_index + 0] = int(255.99 * clamp(color.x, 0.0f, 1.0f));
-            arr[arr_index + 1] = int(255.99 * clamp(color.y, 0.0f, 1.0f));
-            arr[arr_index + 2] = int(255.99 * clamp(color.z, 0.0f, 1.0f));
-        }
-    }
-
-    // Load texture data
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nx, ny, 0, GL_RGB, GL_UNSIGNED_BYTE, arr);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    delete[] arr;
+    // Initial render
+    render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 
     // Render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
+
+        // Start ImGui frame
+        ImGuiManager::BeginFrame();
+
+        // Show camera controls
+        ImGuiManager::CameraControls(g_current_camera, sample);
+
+        // Check if camera was modified or samples changed
+        if (g_current_camera.lookfrom.x != gpu_scene.camera.lookfrom.x ||
+            g_current_camera.lookfrom.y != gpu_scene.camera.lookfrom.y ||
+            g_current_camera.lookfrom.z != gpu_scene.camera.lookfrom.z ||
+            g_current_camera.lookat.x != gpu_scene.camera.lookat.x ||
+            g_current_camera.lookat.y != gpu_scene.camera.lookat.y ||
+            g_current_camera.lookat.z != gpu_scene.camera.lookat.z ||
+            g_current_camera.up.x != gpu_scene.camera.up.x ||
+            g_current_camera.up.y != gpu_scene.camera.up.y ||
+            g_current_camera.up.z != gpu_scene.camera.up.z ||
+            g_current_camera.vfov != gpu_scene.camera.vfov ||
+            sample != gpu_scene.samples_per_pixel) {
+            
+            g_camera_changed = true;
+            gpu_scene.camera = g_current_camera;
+            gpu_scene.samples_per_pixel = sample;
+            
+            // Recompute camera ray data
+            cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
+            
+            // Re-render the scene
+            render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
+            checkCudaErrors(cudaGetLastError());
+            checkCudaErrors(cudaDeviceSynchronize());
+        }
+
+        // Update texture with new frame buffer
+        unsigned char* arr = new unsigned char[nx * ny * 3];
+        for (int j = 0; j < ny; ++j) {
+            for (int i = 0; i < nx; ++i) {
+                int pixel_index = j * nx + i;
+                float3 color = fb[pixel_index];
+                color.x = sqrt(color.x);
+                color.y = sqrt(color.y);
+                color.z = sqrt(color.z);
+                int arr_index = pixel_index * 3;
+                arr[arr_index + 0] = int(255.99 * clamp(color.x, 0.0f, 1.0f));
+                arr[arr_index + 1] = int(255.99 * clamp(color.y, 0.0f, 1.0f));
+                arr[arr_index + 2] = int(255.99 * clamp(color.z, 0.0f, 1.0f));
+            }
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nx, ny, 0, GL_RGB, GL_UNSIGNED_BYTE, arr);
+        delete[] arr;
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -299,9 +341,15 @@ int main(int argc, char* argv[]) {
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        // Render ImGui
+        ImGuiManager::EndFrame();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // Cleanup ImGui
+    ImGuiManager::Shutdown();
 
     // Cleanup
     glDeleteVertexArrays(1, &VAO);

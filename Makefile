@@ -11,12 +11,18 @@ GLFW_LIBS = -lglfw
 GLEW_LIBS = -lGLEW
 OPENGL_LIBS = -lGL
 
-HOST_COMPILER_FLAGS = -m64 -std=c++17 -I$(CUDA_PATH)/include 
-NVCCFLAGS = $(NVCC_DBG) -m64 -std=c++17 -allow-unsupported-compiler
+# ImGui dependencies
+IMGUI_DIR = 3rdparty/imgui
+IMGUI_SOURCES = $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
+IMGUI_OBJS = $(IMGUI_SOURCES:.cpp=.o)
+
+# Update include paths to use relative paths for ImGui
+HOST_COMPILER_FLAGS = -m64 -std=c++17 -I$(CUDA_PATH)/include -I./3rdparty/imgui -I./3rdparty/imgui/backends
+NVCCFLAGS = $(NVCC_DBG) -m64 -std=c++17 -allow-unsupported-compiler -I./3rdparty/imgui -I./3rdparty/imgui/backends
 GENCODE_FLAGS  = -gencode arch=compute_86,code=sm_86
 
-INCS = bbox.cuh bvh.cuh 3rdparty/stb_image.h 3rdparty/stb_image_write.h camera.cuh compute_normals.h frame.h flexception.h intersection.h light.h material.h matrix.h parse_obj.h parse_ply.h parse_scene.h parse_serialized.h print_scene.h radiance.cuh texture.h transform.h cutil_math.h ray.h torrey.cuh scene.h 3rdparty/miniz.h 3rdparty/pugiconfig.hpp 3rdparty/pugixml.hpp 3rdparty/stb_image.h 3rdparty/tinyexr.h 3rdparty/tinyply.h shape.cuh
-SRCS = compute_normals.cpp parse_obj.cpp parse_ply.cpp parse_scene.cpp parse_serialized.cpp print_scene.cpp scene.cpp transform.cpp 3rdparty/pugixml.cpp 3rdparty/miniz.c
+INCS = bbox.cuh bvh.cuh 3rdparty/stb_image.h 3rdparty/stb_image_write.h camera.cuh compute_normals.h frame.h flexception.h intersection.h light.h material.h matrix.h parse_obj.h parse_ply.h parse_scene.h parse_serialized.h print_scene.h radiance.cuh texture.h transform.h cutil_math.h ray.h torrey.cuh scene.h 3rdparty/miniz.h 3rdparty/pugiconfig.hpp 3rdparty/pugixml.hpp 3rdparty/stb_image.h 3rdparty/tinyexr.h 3rdparty/tinyply.h shape.cuh imgui_impl.h
+SRCS = compute_normals.cpp parse_obj.cpp parse_ply.cpp parse_scene.cpp parse_serialized.cpp print_scene.cpp scene.cpp transform.cpp 3rdparty/pugixml.cpp 3rdparty/miniz.c $(IMGUI_SOURCES)
 
 CU_SRCS = main.cu bvh.cu
 CU_OBJS := $(patsubst %.cu, %.o, $(CU_SRCS))
