@@ -105,6 +105,25 @@ static float g_pitch = 0.0f;   // Pitch starts at 0.0 degrees
 static float g_mouse_sensitivity = 0.1f;
 static float g_camera_speed = 0.5f;
 
+// Add these with other global variables
+static float g_delta_time = 0.0f;
+static float g_last_frame = 0.0f;
+static float g_fps = 0.0f;
+static float g_fps_update_interval = 0.5f;  // Update FPS every 0.5 seconds
+static float g_fps_accumulator = 0.0f;
+static int g_fps_frames = 0;
+static const int MAGIC_SAMPLE_COUNT = 33;  // Magic number for temporary samples during movement
+static int g_original_samples = 0;  // Store original sample count
+static int g_previous_samples = 0;  // Store previous sample count
+static bool g_is_using_temp_samples = false;  // Track if we're using temporary samples
+static bool g_camera_moving = false;  // Track if camera is moving
+static float g_movement_timeout = 0.5f;  // Time to wait before restoring samples
+static float g_movement_timer = 0.0f;
+static int g_samples_per_pixel = 0;  // Global samples per pixel variable
+static bool g_samples_modified_by_ui = false;  // Track if samples were modified by UI
+static bool g_ui_interacting = false;  // Track if UI is being interacted with
+static bool g_should_restore_samples = false;  // Track if samples should be restored
+
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -127,7 +146,7 @@ int main(int argc, char* argv[]) {
     // Construct Scene
     Scene scene(parsed_scene);
     std::cout << "Scene construction done." << std::endl;
-    
+
     stop = clock();
     double timer_seconds0 = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "This took " << timer_seconds0 << " seconds.\n\n";
@@ -141,15 +160,15 @@ int main(int argc, char* argv[]) {
     int ny = gpu_scene.height;
     g_nx = nx;  // Set global variables
     g_ny = ny;
-    
+
     // Update window dimensions to match image resolution
     SCR_WIDTH = nx;
     SCR_HEIGHT = ny;
-    
+
     std::cout << "Resolution: "<< nx <<" x " << ny << std::endl;
 
-    int sample = gpu_scene.samples_per_pixel;
-    std::cout << "Sample number is " << sample << std::endl;
+    g_samples_per_pixel = gpu_scene.samples_per_pixel;
+    std::cout << "Sample number is " << g_samples_per_pixel << std::endl;
 
     int num_pixels = nx * ny;
     size_t fb_size = num_pixels * sizeof(float3);
@@ -177,13 +196,13 @@ int main(int argc, char* argv[]) {
     // Compute camera ray data on CPU side
     CameraRayData cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
     printf("Preparing to render!\n\n");
-    
+
     // Render our buffer
-    render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
+    render<<<blocks, threads>>>(fb, nx, ny, g_samples_per_pixel, cam_ray_data, gpu_scene, d_rand_state);
 
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-  
+
     stop = clock();
     double timer_seconds1 = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "GPU rendering took " << timer_seconds1 << " seconds.\n";
@@ -241,7 +260,7 @@ int main(int argc, char* argv[]) {
          1.0f,  1.0f, 0.0f,   1.0f, 0.0f,   // top right
          1.0f, -1.0f, 0.0f,   1.0f, 1.0f,   // bottom right
         -1.0f, -1.0f, 0.0f,   0.0f, 1.0f,   // bottom left
-        -1.0f,  1.0f, 0.0f,   0.0f, 0.0f    // top left 
+        -1.0f,  1.0f, 0.0f,   0.0f, 0.0f    // top left
     };
     unsigned int indices[] = {
         0, 1, 3,  // first triangle
@@ -284,10 +303,10 @@ int main(int argc, char* argv[]) {
 
     // Store initial camera state and samples
     g_current_camera = gpu_scene.camera;
-    ImGuiManager::SetInitialState(g_current_camera, sample);
+    ImGuiManager::SetInitialState(g_current_camera, g_samples_per_pixel);
 
     // Initial render
-    render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
+    render<<<blocks, threads>>>(fb, nx, ny, g_samples_per_pixel, cam_ray_data, gpu_scene, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
@@ -299,11 +318,30 @@ int main(int argc, char* argv[]) {
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
 
+        float current_frame = glfwGetTime();
+        g_delta_time = current_frame - g_last_frame;
+        g_last_frame = current_frame;
+
+        // Update FPS counter
+        g_fps_accumulator += g_delta_time;
+        g_fps_frames++;
+        if (g_fps_accumulator >= g_fps_update_interval) {
+            g_fps = g_fps_frames / g_fps_accumulator;
+            g_fps_accumulator = 0.0f;
+            g_fps_frames = 0;
+        }
+
         // Start ImGui frame
         ImGuiManager::BeginFrame();
 
         // Show camera controls
-        ImGuiManager::CameraControls(g_current_camera, sample);
+        ImGuiManager::CameraControls(g_current_camera, g_samples_per_pixel);
+
+        // Add FPS display
+        ImGui::Begin("Performance", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("FPS: %.1f", g_fps);
+        ImGui::Text("Frame Time: %.3f ms", g_delta_time * 1000.0f);
+        ImGui::End();
 
         // Check if camera was modified or samples changed
         if (g_current_camera.lookfrom.x != gpu_scene.camera.lookfrom.x ||
@@ -316,19 +354,56 @@ int main(int argc, char* argv[]) {
             g_current_camera.up.y != gpu_scene.camera.up.y ||
             g_current_camera.up.z != gpu_scene.camera.up.z ||
             g_current_camera.vfov != gpu_scene.camera.vfov ||
-            sample != gpu_scene.samples_per_pixel) {
-            
+            g_samples_per_pixel != gpu_scene.samples_per_pixel) {
+
             g_camera_changed = true;
             gpu_scene.camera = g_current_camera;
-            gpu_scene.samples_per_pixel = sample;
-            
+            gpu_scene.samples_per_pixel = g_samples_per_pixel;
+
             // Recompute camera ray data
             cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
-            
+
             // Re-render the scene
-            render<<<blocks, threads>>>(fb, nx, ny, sample, cam_ray_data, gpu_scene, d_rand_state);
+            render<<<blocks, threads>>>(fb, nx, ny, g_samples_per_pixel, cam_ray_data, gpu_scene, d_rand_state);
             checkCudaErrors(cudaGetLastError());
             checkCudaErrors(cudaDeviceSynchronize());
+        }
+
+        // Handle sample count restoration
+        if (!g_camera_moving && g_movement_timer > 0.0f && !g_ui_interacting) {
+            g_movement_timer -= g_delta_time;
+            if (g_movement_timer <= 0.0f) {
+                if (g_should_restore_samples && !g_samples_modified_by_ui && g_is_using_temp_samples) {
+                    // Always restore to original samples, ensuring it's at least 1
+                    g_samples_per_pixel = max(1, g_original_samples);
+                    g_is_using_temp_samples = false;
+                }
+                g_movement_timer = 0.0f;
+                g_should_restore_samples = false;
+            }
+        }
+
+        // Check if current sample size is 33 and restore if it is
+        if (g_samples_per_pixel == MAGIC_SAMPLE_COUNT && !g_camera_moving && !g_ui_interacting) {
+            g_samples_per_pixel = max(1, g_previous_samples);
+            g_is_using_temp_samples = false;
+            g_should_restore_samples = false;
+        }
+
+        // Ensure sample size is never 0, but only if we're not in the middle of a camera movement
+        if (g_samples_per_pixel < 1 && !g_camera_moving && !g_mouse_pressed) {
+            g_samples_per_pixel = 1;
+        }
+
+        // Force sample size to 33 during mouse movement
+        if (g_mouse_pressed && !g_ui_interacting) {
+            if (!g_is_using_temp_samples) {
+                g_original_samples = g_samples_per_pixel;
+                g_previous_samples = g_samples_per_pixel;
+            }
+            g_is_using_temp_samples = true;
+            g_samples_per_pixel = MAGIC_SAMPLE_COUNT;
+            g_should_restore_samples = true;
         }
 
         // Update texture with new frame buffer
@@ -388,66 +463,114 @@ int main(int argc, char* argv[]) {
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     // Calculate the aspect ratio
     float aspectRatio = (float)g_nx / (float)g_ny;
-    
+
     // Calculate new dimensions while maintaining aspect ratio
     int newWidth = width;
     int newHeight = (int)(width / aspectRatio);
-    
+
     if (newHeight > height) {
         newHeight = height;
         newWidth = (int)(height * aspectRatio);
     }
-    
+
     // Center the viewport
     int x = (width - newWidth) / 2;
     int y = (height - newHeight) / 2;
-    
+
     glViewport(x, y, newWidth, newHeight);
 }
 
 void processInput(GLFWwindow* window) {
     ImGuiIO& io = ImGui::GetIO();
-    
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    bool was_moving = g_camera_moving;
+    g_camera_moving = false;
 
     // Camera movement with WASD keys
     float3 camera_front = normalize(g_current_camera.lookat - g_current_camera.lookfrom);
     float3 camera_right = normalize(cross(camera_front, g_current_camera.up));
-    
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         g_current_camera.lookfrom += camera_front * g_camera_speed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        g_camera_moving = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         g_current_camera.lookfrom -= camera_front * g_camera_speed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        g_camera_moving = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         g_current_camera.lookfrom -= camera_right * g_camera_speed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        g_camera_moving = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         g_current_camera.lookfrom += camera_right * g_camera_speed;
-    
+        g_camera_moving = true;
+    }
+
     // Update lookat point to maintain direction
     g_current_camera.lookat = g_current_camera.lookfrom + camera_front;
+
+    // Handle sample count changes
+    if (g_camera_moving && !g_ui_interacting) {
+        if (!was_moving) {
+            // Store current samples before reducing
+            if (!g_samples_modified_by_ui) {
+                g_original_samples = g_samples_per_pixel;
+            }
+            g_previous_samples = g_samples_per_pixel;
+            g_is_using_temp_samples = true;
+            g_samples_per_pixel = MAGIC_SAMPLE_COUNT;
+            g_should_restore_samples = true;
+        }
+        g_movement_timer = 0.0f;
+    } else if (was_moving && !g_ui_interacting) {
+        // Just stopped moving, immediately restore samples
+        g_samples_per_pixel = g_previous_samples;
+        g_is_using_temp_samples = false;
+        g_should_restore_samples = false;
+        g_movement_timer = 0.0f;
+    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     ImGuiIO& io = ImGui::GetIO();
-    
+
     // Always update ImGui mouse state
     if (button >= 0 && button < ImGuiMouseButton_COUNT)
         io.MouseDown[button] = action == GLFW_PRESS;
 
     // Handle camera controls
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        g_mouse_pressed = true;
-        g_first_mouse = true;
+        if (!io.WantCaptureMouse) {  // Only handle camera if not interacting with UI
+            // Store current samples before reducing
+            if (!g_samples_modified_by_ui) {
+                g_original_samples = g_samples_per_pixel;
+            }
+            g_previous_samples = g_samples_per_pixel;
+            g_is_using_temp_samples = true;
+            g_samples_per_pixel = MAGIC_SAMPLE_COUNT;
+            g_should_restore_samples = true;
+
+            g_mouse_pressed = true;
+            g_first_mouse = true;
+            g_camera_moving = true;
+            g_movement_timer = 0.0f;
+        }
     }
     else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         g_mouse_pressed = false;
+        g_camera_moving = false;
+        // Start timer to restore samples, just like WASD
+        g_movement_timer = g_movement_timeout;
     }
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     ImGuiIO& io = ImGui::GetIO();
-    
+
     // Always update ImGui mouse position
     io.MousePos = ImVec2((float)xpos, (float)ypos);
 
