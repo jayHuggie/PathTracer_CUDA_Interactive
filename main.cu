@@ -123,6 +123,11 @@ static int g_samples_per_pixel = 0;  // Global samples per pixel variable
 static bool g_samples_modified_by_ui = false;  // Track if samples were modified by UI
 static bool g_ui_interacting = false;  // Track if UI is being interacted with
 static bool g_should_restore_samples = false;  // Track if samples should be restored
+static float3 g_initial_lookfrom;  // Store initial camera position
+static float3 g_initial_lookat;    // Store initial lookat point
+static float g_initial_distance;   // Store initial distance between camera and lookat
+static float g_initial_yaw;        // Store initial yaw
+static float g_initial_pitch;      // Store initial pitch
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -452,9 +457,10 @@ int main(int argc, char* argv[]) {
 
     stop = clock();
     double timer_seconds2 = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::cerr << "OpenGL display took " << timer_seconds2 << " seconds.\n";
+    //std::cerr << "OpenGL display took " << timer_seconds2 << " seconds.\n";
 
-    std::cerr << "Total time took " << timer_seconds0 + timer_seconds1 + timer_seconds2 << " seconds.\n";
+    //std::cerr << "Total time took " << timer_seconds0 + timer_seconds1 + timer_seconds2 << " seconds.\n";
+    std::cerr << "The window was open for " << timer_seconds2 << " seconds.\n";
 
     checkCudaErrors(cudaFree(fb));
     return 0;
@@ -558,6 +564,27 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             g_first_mouse = true;
             g_camera_moving = true;
             g_movement_timer = 0.0f;
+
+            // Store initial camera state
+            g_initial_lookfrom = g_current_camera.lookfrom;
+            g_initial_lookat = g_current_camera.lookat;
+            g_initial_distance = length(g_initial_lookfrom - g_initial_lookat);
+            
+            // Calculate initial yaw and pitch from the initial direction
+            float3 initial_direction = normalize(g_initial_lookat - g_initial_lookfrom);
+            g_initial_pitch = degrees(asin(initial_direction.y));
+            g_initial_yaw = degrees(atan2(initial_direction.z, initial_direction.x));
+            
+            // Reset current yaw and pitch to initial values
+            g_yaw = g_initial_yaw;
+            g_pitch = g_initial_pitch;
+
+            // Debug print initial values
+            printf("Initial state:\n");
+            printf("Lookfrom: (%f, %f, %f)\n", g_initial_lookfrom.x, g_initial_lookfrom.y, g_initial_lookfrom.z);
+            printf("Lookat: (%f, %f, %f)\n", g_initial_lookat.x, g_initial_lookat.y, g_initial_lookat.z);
+            printf("Distance: %f\n", g_initial_distance);
+            printf("Initial Yaw: %f, Initial Pitch: %f\n", g_initial_yaw, g_initial_pitch);
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
@@ -597,14 +624,26 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
         if (g_pitch > 89.0f) g_pitch = 89.0f;
         if (g_pitch < -89.0f) g_pitch = -89.0f;
 
-        // Calculate new camera position and look-at point
+        // Calculate new direction
         float3 direction;
         direction.x = cos(radians(g_yaw)) * cos(radians(g_pitch));
         direction.y = sin(radians(g_pitch));
         direction.z = sin(radians(g_yaw)) * cos(radians(g_pitch));
         direction = normalize(direction);
 
-        // Update camera
-        g_current_camera.lookat = g_current_camera.lookfrom + direction;
+        // Calculate the new camera position
+        float3 offset = direction * g_initial_distance;
+        g_current_camera.lookfrom = g_initial_lookat - offset;
+        
+        // Keep lookat point unchanged
+        g_current_camera.lookat = g_initial_lookat;
+
+        // Debug print final values
+        printf("\nCurrent state:\n");
+        printf("Direction: (%f, %f, %f)\n", direction.x, direction.y, direction.z);
+        printf("Yaw: %f, Pitch: %f\n", g_yaw, g_pitch);
+        printf("New Lookfrom: (%f, %f, %f)\n", g_current_camera.lookfrom.x, g_current_camera.lookfrom.y, g_current_camera.lookfrom.z);
+        printf("Lookat: (%f, %f, %f)\n", g_current_camera.lookat.x, g_current_camera.lookat.y, g_current_camera.lookat.z);
+        printf("Current distance: %f\n", length(g_current_camera.lookfrom - g_current_camera.lookat));
     }
 }
