@@ -129,11 +129,15 @@ static float g_initial_distance;   // Store initial distance between camera and 
 static float g_initial_yaw;        // Store initial yaw
 static float g_initial_pitch;      // Store initial pitch
 
+// Add with other global variables
+static Camera g_initial_camera;  // Store the initial camera state
+
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+void resetCamera();
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -201,6 +205,10 @@ int main(int argc, char* argv[]) {
     // Compute camera ray data on CPU side
     CameraRayData cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
     printf("Preparing to render!\n\n");
+
+    // Store initial camera state
+    g_initial_camera = gpu_scene.camera;
+    g_current_camera = g_initial_camera;
 
     // Render our buffer
     render<<<blocks, threads>>>(fb, nx, ny, g_samples_per_pixel, cam_ray_data, gpu_scene, d_rand_state);
@@ -307,7 +315,6 @@ int main(int argc, char* argv[]) {
     ImGuiManager::Init(window);
 
     // Store initial camera state and samples
-    g_current_camera = gpu_scene.camera;
     ImGuiManager::SetInitialState(g_current_camera, g_samples_per_pixel);
 
     // Initial render
@@ -492,6 +499,11 @@ void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
+    // Add reset camera on 'R' key press
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && !g_ui_interacting) {
+        resetCamera();
+    }
+
     bool was_moving = g_camera_moving;
     g_camera_moving = false;
 
@@ -578,13 +590,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             // Reset current yaw and pitch to initial values
             g_yaw = g_initial_yaw;
             g_pitch = g_initial_pitch;
-
+/*
             // Debug print initial values
             printf("Initial state:\n");
             printf("Lookfrom: (%f, %f, %f)\n", g_initial_lookfrom.x, g_initial_lookfrom.y, g_initial_lookfrom.z);
             printf("Lookat: (%f, %f, %f)\n", g_initial_lookat.x, g_initial_lookat.y, g_initial_lookat.z);
             printf("Distance: %f\n", g_initial_distance);
             printf("Initial Yaw: %f, Initial Pitch: %f\n", g_initial_yaw, g_initial_pitch);
+*/
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
@@ -638,6 +651,7 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
         // Keep lookat point unchanged
         g_current_camera.lookat = g_initial_lookat;
 
+/*
         // Debug print final values
         printf("\nCurrent state:\n");
         printf("Direction: (%f, %f, %f)\n", direction.x, direction.y, direction.z);
@@ -645,5 +659,22 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
         printf("New Lookfrom: (%f, %f, %f)\n", g_current_camera.lookfrom.x, g_current_camera.lookfrom.y, g_current_camera.lookfrom.z);
         printf("Lookat: (%f, %f, %f)\n", g_current_camera.lookat.x, g_current_camera.lookat.y, g_current_camera.lookat.z);
         printf("Current distance: %f\n", length(g_current_camera.lookfrom - g_current_camera.lookat));
+*/
     }
+}
+
+void resetCamera() {
+    // Reset camera to initial state
+    g_current_camera = g_initial_camera;
+    
+    // Reset yaw and pitch to initial values
+    float3 initial_direction = normalize(g_initial_camera.lookat - g_initial_camera.lookfrom);
+    g_yaw = degrees(atan2(initial_direction.z, initial_direction.x));
+    g_pitch = degrees(asin(initial_direction.y));
+    
+    // Reset other camera-related variables
+    g_camera_moving = false;
+    g_mouse_pressed = false;
+    g_first_mouse = true;
+    g_movement_timer = 0.0f;
 }
