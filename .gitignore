@@ -11,6 +11,9 @@ transform.o
 torrey
 output/img.png
 
+# ImGui runtime layout
+imgui.ini
+
 # macOS system files
 .DS_Store
 .AppleDouble
