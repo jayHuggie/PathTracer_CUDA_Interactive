@@ -161,9 +161,12 @@ int main(int argc, char* argv[]) {
     std::cerr << "This took " << timer_seconds0 << " seconds.\n\n";
 
     // Convert Scene to GPUScene
+    clock_t gpu_copy_start = clock();
     GPUScene gpu_scene;
     gpu_scene.copyFrom(scene);
-    std::cout << "Scene copied to GPU." << std::endl;
+    clock_t gpu_copy_stop = clock();
+    double gpu_copy_time = ((double)(gpu_copy_stop - gpu_copy_start)) / CLOCKS_PER_SEC;
+    std::cout << "Scene copied to GPU in " << gpu_copy_time << " seconds." << std::endl;
 
     int nx = gpu_scene.width;
     int ny = gpu_scene.height;
@@ -219,6 +222,8 @@ int main(int argc, char* argv[]) {
     stop = clock();
     double timer_seconds1 = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "GPU rendering took " << timer_seconds1 << " seconds.\n";
+    std::cerr << "Total initialization time: " 
+              << timer_seconds0 + gpu_copy_time + timer_seconds1 << " seconds.\n\n";
 
     start = clock();
 
