@@ -1,8 +1,19 @@
-## A GPU Path Tracer written in CUDA C++ with BVH acceleration. (2025 Updated Version)
+## Interactive Real-Time GPU Path Tracer with CUDA and OpenGL
 <img src="/sample_images/Dragon_1000.png" alt="dragon_1000" title="Dragon example" width="500"/>
 This 512 x 512 Dragon in a Cornell Box with 1000 samples per pixel took 20.74 seconds to render.
 
 (The Dragon has 871,306 triangles!)
+
+# Project Overview
+
+Thanks to CUDA-based GPU acceleration and BVH, I was able to reduce the render time of a path-traced image from **42 seconds** to just **0.88 seconds** in my previous project ([PathTracer_CUDA](https://github.com/jayHuggie/PathTracer_CUDA)).
+
+Building on this achievement, this project extends the original path tracer into an **interactive, real-time renderer**:
+
+- **CUDA** handles the path tracing computations on the GPU.
+- **OpenGL** displays the rendered image in real time.
+- **GLFW** manages the application window and user input.
+- A simple GUI is built using **Dear ImGui**.
 
 # Features:
 
@@ -45,6 +56,34 @@ The resolution and sample size can be adjusted by changing the values of the xml
 * GPU: RTX 3080
 * Nvidia Driver Version: 560.35.05
 * CUDA Version: 12.6
+
+## Dependencies
+
+This project requires the following libraries and tools:
+
+- [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (>= 11.0)
+- [OpenGL](https://www.opengl.org/) (provided by NVIDIA drivers)
+- [GLFW](https://www.glfw.org/) (window and input management)
+- [Dear ImGui](https://github.com/ocornut/imgui) (GUI; included as a submodule or source)
+- [GLEW](http://glew.sourceforge.net/) (OpenGL extension loading, if required)
+- [CMake](https://cmake.org/) (build system)
+- C++17 compatible compiler (e.g., g++ 9+ or clang 10+)
+
+### Installing Dependencies on Ubuntu
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake libglfw3-dev libglew-dev
+```
+
+- **CUDA Toolkit:**  
+  Download and install from the [NVIDIA CUDA Toolkit website](https://developer.nvidia.com/cuda-toolkit) to match your GPU and driver version.
+
+- **Dear ImGui:**  
+  This project includes Dear ImGui as a submodule. If you did not clone with submodules, run:
+  ```bash
+  git submodule update --init --recursive
+  ```
 
 # More sample images!
 
