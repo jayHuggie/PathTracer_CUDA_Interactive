@@ -59,6 +59,33 @@ __global__ void setup_rand(curandState* rand_state, int max_x, int max_y) {
     curand_init(1984, pixel_index, 0, &rand_state[pixel_index]);
 }
 
+__global__ void render_progressive(
+    float3* accumulationBuffer, int max_x, int max_y, CameraRayData cam_ray_data,
+    GPUScene scene, curandState* rand_state, int sampleCount, int samplesPerFrame)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
+    if((i >= max_x) || (j >= max_y)) return;
+    int pixel_index = j*max_x + i;
+    curandState local_rand_state = rand_state[pixel_index];
+
+    float3 newSamples = make_float3(0,0,0);
+    for (int s = 0; s < samplesPerFrame; ++s) {
+        float u = float(i + curand_uniform(&local_rand_state)) / float(max_x);
+        float v = float(j + curand_uniform(&local_rand_state)) / float(max_y);
+        Ray r = generate_primary_ray(cam_ray_data, u, v);
+        newSamples += radiance(scene, r, local_rand_state);
+    }
+
+    if (sampleCount == 0) {
+        accumulationBuffer[pixel_index] = newSamples;
+    } else {
+        accumulationBuffer[pixel_index] += newSamples;
+    }
+
+    rand_state[pixel_index] = local_rand_state;
+}
+
 // OpenGL shader sources
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -94,6 +121,10 @@ int g_ny = 0;
 // Add these global variables
 bool g_camera_changed = false;
 Camera g_current_camera;
+
+// Accumulation buffer and sample count
+float3* accumulationBuffer = nullptr;
+int accumulationSampleCount = 0;
 
 // Mouse control variables
 static bool g_first_mouse = true;
@@ -188,6 +219,11 @@ int main(int argc, char* argv[]) {
     // allocate frame buffer
     float3 *fb;
     checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
+
+    // allocate accumulation buffer
+    checkCudaErrors(cudaMallocManaged((void**)&accumulationBuffer, fb_size));
+    cudaMemset(accumulationBuffer, 0, fb_size);
+    accumulationSampleCount = 0;
 
     int tx = 32;
     int ty = 8;
@@ -358,6 +394,7 @@ int main(int argc, char* argv[]) {
         ImGui::Begin("Performance", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("FPS: %.1f", g_fps);
         ImGui::Text("Frame Time: %.3f ms", g_delta_time * 1000.0f);
+        ImGui::Text("Samples: %d", accumulationSampleCount);
         ImGui::End();
 
         // Check if camera was modified or samples changed
@@ -370,65 +407,40 @@ int main(int argc, char* argv[]) {
             g_current_camera.up.x != gpu_scene.camera.up.x ||
             g_current_camera.up.y != gpu_scene.camera.up.y ||
             g_current_camera.up.z != gpu_scene.camera.up.z ||
-            g_current_camera.vfov != gpu_scene.camera.vfov ||
-            g_samples_per_pixel != gpu_scene.samples_per_pixel) {
+            g_current_camera.vfov != gpu_scene.camera.vfov) {
 
             g_camera_changed = true;
             gpu_scene.camera = g_current_camera;
-            gpu_scene.samples_per_pixel = g_samples_per_pixel;
-
             // Recompute camera ray data
             cam_ray_data = compute_camera_ray_data(gpu_scene.camera, gpu_scene.width, gpu_scene.height);
-
-            // Re-render the scene
-            render<<<blocks, threads>>>(fb, nx, ny, g_samples_per_pixel, cam_ray_data, gpu_scene, d_rand_state);
-            checkCudaErrors(cudaGetLastError());
-            checkCudaErrors(cudaDeviceSynchronize());
         }
 
-        // Handle sample count restoration
-        if (!g_camera_moving && g_movement_timer > 0.0f && !g_ui_interacting) {
-            g_movement_timer -= g_delta_time;
-            if (g_movement_timer <= 0.0f) {
-                if (g_should_restore_samples && !g_samples_modified_by_ui && g_is_using_temp_samples) {
-                    // Always restore to original samples, ensuring it's at least 1
-                    g_samples_per_pixel = max(1, g_original_samples);
-                    g_is_using_temp_samples = false;
-                }
-                g_movement_timer = 0.0f;
-                g_should_restore_samples = false;
-            }
+        // Reset accumulation if camera changed
+        if (g_camera_changed) {
+            accumulationSampleCount = 0;
+            cudaMemset(accumulationBuffer, 0, fb_size);
+            g_camera_changed = false;
         }
 
-        // Check if current sample size is 33 and restore if it is
-        if (g_samples_per_pixel == MAGIC_SAMPLE_COUNT && !g_camera_moving && !g_ui_interacting) {
-            g_samples_per_pixel = max(1, g_previous_samples);
-            g_is_using_temp_samples = false;
-            g_should_restore_samples = false;
-        }
+        // Each frame, add samples (adjustable)
+        int samplesPerFrame = 2;
+        render_progressive<<<blocks, threads>>>(
+            accumulationBuffer, nx, ny, cam_ray_data, gpu_scene, d_rand_state, accumulationSampleCount, samplesPerFrame);
+        checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaDeviceSynchronize());
+        accumulationSampleCount += samplesPerFrame;
 
-        // Ensure sample size is never 0, but only if we're not in the middle of a camera movement
-        if (g_samples_per_pixel < 1 && !g_camera_moving && !g_mouse_pressed) {
-            g_samples_per_pixel = 1;
-        }
-
-        // Force sample size to 33 during mouse movement
-        if (g_mouse_pressed && !g_ui_interacting) {
-            if (!g_is_using_temp_samples) {
-                g_original_samples = g_samples_per_pixel;
-                g_previous_samples = g_samples_per_pixel;
-            }
-            g_is_using_temp_samples = true;
-            g_samples_per_pixel = MAGIC_SAMPLE_COUNT;
-            g_should_restore_samples = true;
-        }
-
-        // Update texture with new frame buffer
+        // Update texture with new frame buffer (use running average)
         unsigned char* arr = new unsigned char[nx * ny * 3];
         for (int j = 0; j < ny; ++j) {
             for (int i = 0; i < nx; ++i) {
                 int pixel_index = j * nx + i;
-                float3 color = fb[pixel_index];
+                float3 color;
+                if (accumulationSampleCount > 0) {
+                    color = accumulationBuffer[pixel_index] / float(accumulationSampleCount);
+                } else {
+                    color = make_float3(0,0,0);
+                }
                 color.x = sqrt(color.x);
                 color.y = sqrt(color.y);
                 color.z = sqrt(color.z);
@@ -438,7 +450,6 @@ int main(int argc, char* argv[]) {
                 arr[arr_index + 2] = int(255.99 * clamp(color.z, 0.0f, 1.0f));
             }
         }
-
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nx, ny, 0, GL_RGB, GL_UNSIGNED_BYTE, arr);
         delete[] arr;
 
@@ -475,6 +486,7 @@ int main(int argc, char* argv[]) {
     std::cerr << "The window was open for " << timer_seconds2 << " seconds.\n";
 
     checkCudaErrors(cudaFree(fb));
+    checkCudaErrors(cudaFree(accumulationBuffer));
     return 0;
 }
 
@@ -671,12 +683,10 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 void resetCamera() {
     // Reset camera to initial state
     g_current_camera = g_initial_camera;
-    
     // Reset yaw and pitch to initial values
     float3 initial_direction = normalize(g_initial_camera.lookat - g_initial_camera.lookfrom);
     g_yaw = degrees(atan2(initial_direction.z, initial_direction.x));
     g_pitch = degrees(asin(initial_direction.y));
-    
     // Reset other camera-related variables
     g_camera_moving = false;
     g_mouse_pressed = false;
