@@ -46,7 +46,7 @@ public:
         initial_samples = samples;
     }
 
-    static void CameraControls(Camera& camera, int& samples_per_pixel) {
+    static void CameraControls(Camera& camera, int& samples_per_pixel, int& samples_per_frame) {
         ImGui::Begin("Camera Controls");
         
         float lookfrom[3] = {camera.lookfrom.x, camera.lookfrom.y, camera.lookfrom.z};
@@ -91,10 +91,18 @@ public:
 
         ImGui::Separator();
 
-        // Samples per pixel control - input box
+        // Samples per pixel control - input box (commented out)
+        /*
         if (ImGui::InputInt("Samples per Pixel", &samples_per_pixel, 100, 1000)) {
             // Clamp the value to a reasonable range
             samples_per_pixel = std::max(1, std::min(10000, samples_per_pixel));
+        }
+        */
+
+        // Samples per frame slider
+        if (ImGui::SliderInt("Samples per Frame", &samples_per_frame, 1, 10)) {
+            // Clamp for safety
+            samples_per_frame = std::max(1, std::min(10, samples_per_frame));
         }
 
         ImGui::Separator();

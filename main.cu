@@ -125,6 +125,9 @@ Camera g_current_camera;
 // Accumulation buffer and sample count
 float3* accumulationBuffer = nullptr;
 int accumulationSampleCount = 0;
+// Add global for samples per frame
+int g_samples_per_frame = 2;
+int g_prev_samples_per_frame = g_samples_per_frame;
 
 // Mouse control variables
 static bool g_first_mouse = true;
@@ -388,7 +391,7 @@ int main(int argc, char* argv[]) {
         ImGuiManager::BeginFrame();
 
         // Show camera controls
-        ImGuiManager::CameraControls(g_current_camera, g_samples_per_pixel);
+        ImGuiManager::CameraControls(g_current_camera, g_samples_per_pixel, g_samples_per_frame);
 
         // Add FPS display
         ImGui::Begin("Performance", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -423,12 +426,17 @@ int main(int argc, char* argv[]) {
         }
 
         // Each frame, add samples (adjustable)
-        int samplesPerFrame = 2;
+        // Reset accumulation if samples per frame changed
+        if (g_samples_per_frame != g_prev_samples_per_frame) {
+            accumulationSampleCount = 0;
+            cudaMemset(accumulationBuffer, 0, fb_size);
+            g_prev_samples_per_frame = g_samples_per_frame;
+        }
         render_progressive<<<blocks, threads>>>(
-            accumulationBuffer, nx, ny, cam_ray_data, gpu_scene, d_rand_state, accumulationSampleCount, samplesPerFrame);
+            accumulationBuffer, nx, ny, cam_ray_data, gpu_scene, d_rand_state, accumulationSampleCount, g_samples_per_frame);
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceSynchronize());
-        accumulationSampleCount += samplesPerFrame;
+        accumulationSampleCount += g_samples_per_frame;
 
         // Update texture with new frame buffer (use running average)
         unsigned char* arr = new unsigned char[nx * ny * 3];
