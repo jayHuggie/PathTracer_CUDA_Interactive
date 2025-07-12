@@ -9,7 +9,7 @@ print_scene.o
 scene.o
 transform.o
 imgui_manager.o
-opengl_manager.o
+opengl_display.o
 
 torrey
 output/img.png
