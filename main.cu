@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
     // Remove direct assignment to g_samples_per_pixel
     // g_samples_per_pixel = gpu_scene.samples_per_pixel;
     ImGuiManager_SetInitialState(gpu_scene.camera, gpu_scene.samples_per_pixel);
-    std::cout << "Sample number is " << ImGuiManager_GetSamplesPerPixel() << std::endl;
+    //std::cout << "Sample number is " << ImGuiManager_GetSamplesPerPixel() << std::endl;
 
     int num_pixels = nx * ny;
     size_t fb_size = num_pixels * sizeof(float3);
@@ -289,16 +289,27 @@ int main(int argc, char* argv[]) {
         Camera& g_current_camera = ImGuiManager_GetCurrentCamera();
         int& g_samples_per_pixel = ImGuiManager_GetSamplesPerPixel();
         int& g_samples_per_frame = ImGuiManager_GetSamplesPerFrame();
-        if (g_current_camera.lookfrom.x != gpu_scene.camera.lookfrom.x ||
-            g_current_camera.lookfrom.y != gpu_scene.camera.lookfrom.y ||
-            g_current_camera.lookfrom.z != gpu_scene.camera.lookfrom.z ||
-            g_current_camera.lookat.x != gpu_scene.camera.lookat.x ||
-            g_current_camera.lookat.y != gpu_scene.camera.lookat.y ||
-            g_current_camera.lookat.z != gpu_scene.camera.lookat.z ||
-            g_current_camera.up.x != gpu_scene.camera.up.x ||
-            g_current_camera.up.y != gpu_scene.camera.up.y ||
-            g_current_camera.up.z != gpu_scene.camera.up.z ||
-            g_current_camera.vfov != gpu_scene.camera.vfov) {
+
+        // Use a floating-point tolerance for camera comparison
+        // the code only considers the camera “changed” if the difference 
+        // is significant (greater than a tiny threshold).
+        // --> fixes the issue where the sample count gets stuck
+        auto camera_changed = [](const Camera& a, const Camera& b) {
+            const float eps = 1e-5f;
+            return
+                fabs(a.lookfrom.x - b.lookfrom.x) > eps ||
+                fabs(a.lookfrom.y - b.lookfrom.y) > eps ||
+                fabs(a.lookfrom.z - b.lookfrom.z) > eps ||
+                fabs(a.lookat.x - b.lookat.x) > eps ||
+                fabs(a.lookat.y - b.lookat.y) > eps ||
+                fabs(a.lookat.z - b.lookat.z) > eps ||
+                fabs(a.up.x - b.up.x) > eps ||
+                fabs(a.up.y - b.up.y) > eps ||
+                fabs(a.up.z - b.up.z) > eps ||
+                fabs(a.vfov - b.vfov) > eps;
+        };
+        
+        if (camera_changed(g_current_camera, gpu_scene.camera)) {
             g_camera_changed = true;
             gpu_scene.camera = g_current_camera;
             // Recompute camera ray data
