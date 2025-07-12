@@ -1,12 +1,19 @@
 ## Interactive Real-Time GPU Path Tracer with CUDA and OpenGL
-<img src="/sample_images/sphere_interactive.gif" alt="sphere" title="Sphere Interactive" width="800"/>
-This 512 x 512 Dragon in a Cornell Box with 1000 samples per pixel took 20.74 seconds to render.
 
-(The Dragon has 871,306 triangles!)
+<img src="/sample_images/sphere_interactive.gif" alt="sphere" title="Sphere Interactive" width="800"/>
+
+### *Three Spheres*
+
+**Materials:** Turquoise (**Phong BRDF**), Red (**Diffuse BRDF**), Magenta (**Phong BRDF**)  
+**Resolution:** 640 × 480  
+**Average FPS:** 60 FPS  
+**Total Initialization Time:** *0.14 seconds*  
+<sub>(Scene Parsing + Construction + GPU Upload + First Frame Rendering)</sub>
+
 
 # Project Overview
 
-Thanks to CUDA-based GPU acceleration and BVH, I was able to reduce the render time of a path-traced image from **42 seconds** to just **0.88 seconds** in my previous project ([PathTracer_CUDA](https://github.com/jayHuggie/PathTracer_CUDA)).
+Thanks to CUDA-based GPU acceleration and BVH, I was able to reduce the render time of a path-traced image (with 500 sample counts) from **42 seconds** to just **0.88 seconds** in my previous project ([PathTracer_CUDA](https://github.com/jayHuggie/PathTracer_CUDA)).
 
 Building on this achievement, this project extends the original path tracer into an **interactive, real-time renderer**:
 
@@ -17,13 +24,13 @@ Building on this achievement, this project extends the original path tracer into
 
 # Features:
 
-* Parses a scene in Mitsuba XML file format.
+* Parses a scene in Mitsuba XML file format, constructs the parsed scene and BVH on the CPU, then uploads the data to the GPU.
 * GPU Path Tracer (with global illumination) using CUDA.
 * Implements a BVH acceleration structure.
 * Support for spheres and triangle meshes.
 * Support for diffuse, mirror, plastic, Phong materials (with Fresnel reflection).
 * Anti-aliasing, Russian Roulette termination.
-* Exports the scene into a png file.
+* Displays a noisy-to-clear, **progressively** refined path-traced image in an interactive OpenGL window.
 
 # Running the code
 
@@ -47,8 +54,7 @@ or like:
 ```
 ./torrey scenes/budda/buddha.xml
 ```
-The resolution and sample size can be adjusted by changing the values of the xml files.  <br /> <br />
-3. The rendered image can be found in the '**output**' folder under the name '**img.png**'!
+The number of samples accumulated per frame can be interactively adjusted at runtime using the "Samples per Frame" slider in the ImGui UI.  <br /> <br />
 
 # Tested on:
 * System: Ubuntu 24.04.1 LTS
@@ -62,10 +68,10 @@ The resolution and sample size can be adjusted by changing the values of the xml
 This project requires the following libraries and tools:
 
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (>= 11.0)
-- [OpenGL](https://www.opengl.org/) (provided by NVIDIA drivers)
+- [OpenGL](https://www.opengl.org/)
 - [GLFW](https://www.glfw.org/) (window and input management)
-- [Dear ImGui](https://github.com/ocornut/imgui) (GUI; included as a submodule or source)
-- [GLEW](http://glew.sourceforge.net/) (OpenGL extension loading, if required)
+- [Dear ImGui](https://github.com/ocornut/imgui) (GUI)
+- [GLEW](http://glew.sourceforge.net/)
 - [CMake](https://cmake.org/) (build system)
 - C++17 compatible compiler (e.g., g++ 9+ or clang 10+)
 
@@ -87,21 +93,32 @@ sudo apt install build-essential cmake libglfw3-dev libglew-dev
 
 # More sample images!
 
-### Cornell Box
+### *Cornell Box*
 
 <img src="/sample_images/cbox_interactive.gif" alt="cbox" title="Cbox Interactive" width="500"/>
-This 512 x 512 Cornell Box with 500 samples per pixel took 0.88 seconds to render. (A significant change compared to the previous version which took 42 seconds!)
 
-### Bunny
+**Resolution:** 640 × 480  
+**Average FPS:** 60 FPS  
+**Total Initialization Time:** *0.17 seconds*  
+<sub>(Scene Parsing + Construction + GPU Upload + First Frame Rendering)</sub>
+
+### *Bunny*
 
 <img src="/sample_images/bunny_interactive.gif" alt="bunny" width="500"/>
-640 x 480 pixels with 500 samples per pixel. Render time: 5.23 seconds  <br />
-(The bunny has 144,046 triangles)
 
-### Buddha
+**Resolution:** 640 × 480  
+**Average FPS:** 55 ~ 60 FPS  
+**Total Initialization Time:** *10.35 seconds*    
+<sub>(The bunny has 144,046 triangles!)<sub>
+
+### *Buddha*
 
 <img src="/sample_images/buddha_interactive.gif" alt="buddha" width="500"/>
-640 x 480 pixels with 500 samples per pixel. Render time: 16.5 seconds (The Buddha has 1,087,474 triangles, Prev. 44 sec)
+
+**Resolution:** 640 × 480  
+**Average FPS:** 50 ~ 60 FPS  
+**Total Initialization Time:** *56.53 seconds*    
+<sub>(The Buddha has 1,087,474 triangles!)<sub>
 
 # Coming Soon..
-Image Textures!
+* **Disney BSDF** — a physically-based “Uber” BSDF designed to handle a broad spectrum of surface materials with a unified model.
