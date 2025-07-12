@@ -72,13 +72,40 @@ void ImGuiManager_EndFrame() {
 }
 
 void ImGuiManager_CameraControls(Camera& camera, int& samples_per_pixel, int& samples_per_frame) {
-    ImGui::Begin("Camera Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", camera.lookfrom.x, camera.lookfrom.y, camera.lookfrom.z);
-    ImGui::Text("Lookat: (%.2f, %.2f, %.2f)", camera.lookat.x, camera.lookat.y, camera.lookat.z);
-    ImGui::Text("Up: (%.2f, %.2f, %.2f)", camera.up.x, camera.up.y, camera.up.z);
-    ImGui::Text("FOV: %.2f", camera.vfov);
+    ImGui::Begin("Scene Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    //ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", camera.lookfrom.x, camera.lookfrom.y, camera.lookfrom.z);
+    //ImGui::Text("Lookat: (%.2f, %.2f, %.2f)", camera.lookat.x, camera.lookat.y, camera.lookat.z);
+    //ImGui::Text("Up: (%.2f, %.2f, %.2f)", camera.up.x, camera.up.y, camera.up.z);
+    //ImGui::Text("FOV: %.2f", camera.vfov);
+    
+    //ImGui::Text("Samples per Pixel: %d", samples_per_pixel);
+    // --- New UI controls for camera ---
+    bool changed = false;
+    float lookfrom[3] = { camera.lookfrom.x, camera.lookfrom.y, camera.lookfrom.z };
+    float lookat[3] = { camera.lookat.x, camera.lookat.y, camera.lookat.z };
+    float up[3] = { camera.up.x, camera.up.y, camera.up.z };
+    float fov = camera.vfov;
+    if (ImGui::InputFloat3("Camera Position", lookfrom)) {
+        camera.lookfrom = make_float3(lookfrom[0], lookfrom[1], lookfrom[2]);
+        changed = true;
+    }
+    if (ImGui::InputFloat3("Lookat", lookat)) {
+        camera.lookat = make_float3(lookat[0], lookat[1], lookat[2]);
+        changed = true;
+    }
+    if (ImGui::InputFloat3("Up", up)) {
+        camera.up = make_float3(up[0], up[1], up[2]);
+        changed = true;
+    }
+    if (ImGui::SliderFloat("FOV", &fov, 10.0f, 120.0f)) {
+        camera.vfov = fov;
+        changed = true;
+    }
     ImGui::SliderInt("Samples per Frame", &samples_per_frame, 1, 10);
-    ImGui::Text("Samples per Pixel: %d", samples_per_pixel);
+    if (changed) {
+        extern bool g_camera_changed;
+        g_camera_changed = true;
+    }
     ImGui::End();
 }
 

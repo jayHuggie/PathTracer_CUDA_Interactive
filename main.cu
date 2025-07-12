@@ -241,10 +241,21 @@ int main(int argc, char* argv[]) {
     // Set up mouse callbacks
     glfwSetMouseButtonCallback(GetOpenGLWindow(), ImGuiManager_MouseButtonCallback);
     glfwSetCursorPosCallback(GetOpenGLWindow(), ImGuiManager_CursorPositionCallback);
+    
     // Initial render
     render<<<blocks, threads>>>(fb, nx, ny, ImGuiManager_GetSamplesPerPixel(), cam_ray_data, gpu_scene, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+
+    stop = clock();
+    double timer_seconds1 = ((double)(stop - start)) / CLOCKS_PER_SEC;
+    std::cerr << "GPU rendering took " << timer_seconds1 << " seconds.\n";
+    std::cerr << "Total initialization time: " 
+              << timer_seconds0 + gpu_copy_time + timer_seconds1 << " seconds.\n\n";
+    
+    // For the total window open time
+    start = clock();
+
     // Render loop
     while (!glfwWindowShouldClose(GetOpenGLWindow())) {
         ImGuiManager_ProcessInput(GetOpenGLWindow());
@@ -311,6 +322,11 @@ int main(int argc, char* argv[]) {
     // Cleanup ImGui
     ImGuiManager_Shutdown();
     CleanupOpenGL();
+
+    stop = clock();
+    double timer_seconds2 = ((double)(stop - start)) / CLOCKS_PER_SEC;
+    std::cerr << "The window was open for " << timer_seconds2 << " seconds.\n";
+
     checkCudaErrors(cudaFree(fb));
     checkCudaErrors(cudaFree(accumulationBuffer));
     return 0;
