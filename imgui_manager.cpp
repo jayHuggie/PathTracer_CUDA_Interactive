@@ -7,6 +7,7 @@
 
 // UI state
 static Camera g_current_camera;
+static Camera g_initial_camera; // <-- moved to file scope
 static int g_samples_per_pixel = 0;
 static int g_samples_per_frame = 2;
 static bool g_ui_interacting = false;
@@ -102,6 +103,11 @@ void ImGuiManager_CameraControls(Camera& camera, int& samples_per_pixel, int& sa
         changed = true;
     }
     ImGui::SliderInt("Samples per Frame", &samples_per_frame, 1, 10);
+    if (ImGui::Button("Reset Camera")) {
+        ImGuiManager_ResetCamera();
+        extern bool g_camera_changed;
+        g_camera_changed = true;
+    }
     if (changed) {
         extern bool g_camera_changed;
         g_camera_changed = true;
@@ -119,6 +125,7 @@ void ImGuiManager_ShowPerformance(float fps, float frame_time_ms, int accumulati
 
 void ImGuiManager_SetInitialState(const Camera& camera, int samples_per_pixel) {
     g_current_camera = camera;
+    g_initial_camera = camera; // <-- store initial camera for reset
     g_samples_per_pixel = samples_per_pixel;
 }
 
@@ -281,14 +288,15 @@ void ImGuiManager_CursorPositionCallback(GLFWwindow* window, double xpos, double
 
 void ImGuiManager_ResetCamera() {
     Camera& g_current_camera = ImGuiManager_GetCurrentCamera();
-    static Camera g_initial_camera;
     float& g_yaw = ImGuiManager_GetYaw();
     float& g_pitch = ImGuiManager_GetPitch();
     bool& g_camera_moving = ImGuiManager_GetCameraMoving();
     bool& g_mouse_pressed = ImGuiManager_GetMousePressed();
     bool& g_first_mouse = ImGuiManager_GetFirstMouse();
     float& g_movement_timer = ImGuiManager_GetMovementTimer();
-    g_current_camera = g_initial_camera;
+
+    g_current_camera = g_initial_camera; // <-- use file-scope initial camera
+    
     float3 initial_direction = normalize(g_initial_camera.lookat - g_initial_camera.lookfrom);
     g_yaw = degrees(atan2(initial_direction.z, initial_direction.x));
     g_pitch = degrees(asin(initial_direction.y));
