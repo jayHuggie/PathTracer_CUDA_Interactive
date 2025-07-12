@@ -155,6 +155,18 @@ int main(int argc, char* argv[]) {
     }
 
     const char* scene_file = argv[1];
+    // Extract scene file base name for window title
+    std::string window_title = "Path Tracer Output";
+    if (scene_file) {
+        std::string path(scene_file);
+        size_t last_slash = path.find_last_of("/\\");
+        std::string base = (last_slash == std::string::npos) ? path : path.substr(last_slash + 1);
+        size_t last_dot = base.find_last_of('.');
+        if (last_dot != std::string::npos && base.substr(last_dot) == ".xml") {
+            base = base.substr(0, last_dot);
+        }
+        if (!base.empty()) window_title = base;
+    }
     clock_t start, stop;
     start = clock();
     // Parse scene
@@ -230,7 +242,7 @@ int main(int argc, char* argv[]) {
 
     // Remove OpenGL/GLFW/GLEW setup, shader, VAO/VBO/EBO, texture setup
     // Instead, initialize OpenGL display
-    if (!InitOpenGL(SCR_WIDTH, SCR_HEIGHT, "Path Tracer Output")) {
+    if (!InitOpenGL(SCR_WIDTH, SCR_HEIGHT, window_title.c_str())) {
         return -1;
     }
     // Set framebuffer size callback and aspect ratio
