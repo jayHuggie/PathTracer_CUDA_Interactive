@@ -1,4 +1,6 @@
-## Interactive Real-Time GPU Path Tracer with CUDA and OpenGL
+# Interactive Real-Time GPU Path Tracer with CUDA and OpenGL
+![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white) ![nVIDIA](https://img.shields.io/badge/cuda-000000.svg?style=for-the-badge&logo=nVIDIA&logoColor=green) ![OpenGL](https://img.shields.io/badge/OpenGL-%23FFFFFF.svg?style=for-the-badge&logo=opengl) ![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+
 
 <img src="/sample_images/sphere_interactive.gif" alt="sphere" title="Sphere Interactive" width="800"/>
 
@@ -9,7 +11,6 @@
 **Average FPS:** 60 FPS  
 **Total Initialization Time:** *0.14 seconds*  
 <sub>(Scene Parsing + Construction + GPU Upload + First Frame Rendering)</sub>
-
 
 # Project Overview
 
@@ -32,29 +33,17 @@ Building on this achievement, this project extends the original path tracer into
 * Anti-aliasing, Russian Roulette termination.
 * Displays a noisy-to-clear, **progressively** refined path-traced image in an interactive OpenGL window.
 
-# Running the code
+# 🎮 Program Controls
 
-1. To compile, use the command:
-
-```
-make
-```
-
-in the home directory. (If the program cannot find CUDA, adjust the CUDA_PATH in the Makefile)
-
-2. After compiling, use the command:
-```
-./torrey scenes/spheres/scene1.xml
-```
-'scenes/spheres/scene1.xml' after ./torrey is just an example. Additional scenes can also be rendered. The xml file can be located in various folders within the ‘scenes’ folder like:
-```
-./torrey scenes/cbox/cbox.xml
-```
-or like:
-```
-./torrey scenes/budda/buddha.xml
-```
-The number of samples accumulated per frame can be interactively adjusted at runtime using the "Samples per Frame" slider in the ImGui UI.  <br /> <br />
+- **Rotate Camera**: Mouse Click + Drag  
+- **Move Camera**:  
+  &nbsp;&nbsp;&nbsp;&nbsp;`W` – Move Forward  
+  &nbsp;&nbsp;&nbsp;&nbsp;`A` – Pan Left  
+  &nbsp;&nbsp;&nbsp;&nbsp;`S` – Move Backward  
+  &nbsp;&nbsp;&nbsp;&nbsp;`D` – Pan Right
+- **Precise Camera Control**: Specific camera parameters can be adjusted by **typing directly** into the ImGui UI fields or using **sliders**.
+- **Reset Camera**: `R`
+- **Samples per Frame**: Adjustable at runtime via the "Samples per Frame" **slider** in the ImGui UI. Controls the number of samples accumulated per frame. 
 
 # Tested on:
 * System: Ubuntu 24.04.1 LTS
@@ -63,7 +52,7 @@ The number of samples accumulated per frame can be interactively adjusted at run
 * Nvidia Driver Version: 560.35.05
 * CUDA Version: 12.6
 
-## Dependencies
+# Dependencies
 
 This project requires the following libraries and tools:
 
@@ -90,6 +79,29 @@ sudo apt install build-essential cmake libglfw3-dev libglew-dev
   ```bash
   git submodule update --init --recursive
   ```
+
+# Running the code
+
+1. To compile, use the command:
+
+```
+make
+```
+
+in the home directory. (If the program cannot find CUDA, adjust the CUDA_PATH in the Makefile)
+
+2. After compiling, use the command:
+```
+./torrey scenes/spheres/scene1.xml
+```
+'scenes/spheres/scene1.xml' after ./torrey is just an example. Additional scenes can also be rendered. The xml file can be located in various folders within the ‘scenes’ folder like:
+```
+./torrey scenes/cbox/cbox.xml
+```
+or like:
+```
+./torrey scenes/budda/buddha.xml
+```
 
 # More sample images!
 
