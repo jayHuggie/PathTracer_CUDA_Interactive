@@ -2,13 +2,13 @@
 ![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white) ![nVIDIA](https://img.shields.io/badge/cuda-000000.svg?style=for-the-badge&logo=nVIDIA&logoColor=green) ![OpenGL](https://img.shields.io/badge/OpenGL-%23FFFFFF.svg?style=for-the-badge&logo=opengl) ![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
 
 
-<img src="/sample_images/sphere_interactive.gif" alt="sphere" title="Sphere Interactive" width="800"/>
+<img src="/sample_images/sphere_progressive.gif" alt="sphere" title="Sphere Interactive" width="800"/>
 
 ### *Three Spheres*
 
 **Materials:** Turquoise (**Phong BRDF**), Red (**Diffuse BRDF**), Magenta (**Phong BRDF**)  
 **Resolution:** 640 × 480  
-**Average FPS:** 60 FPS  
+**Average FPS:** 65 ~ 80 FPS  
 **Total Initialization Time:** *0.14 seconds*  
 <sub>(Scene Parsing + Construction + GPU Upload + First Frame Rendering)</sub>
 
@@ -107,28 +107,28 @@ or like:
 
 ### *Cornell Box*
 
-<img src="/sample_images/cbox_interactive.gif" alt="cbox" title="Cbox Interactive" width="500"/>
+<img src="/sample_images/cbox_progressive.gif" alt="cbox" title="Cbox Interactive" width="500"/>
 
 **Resolution:** 640 × 480  
-**Average FPS:** 60 FPS  
+**Average FPS:** 55 ~ 65 FPS  
 **Total Initialization Time:** *0.17 seconds*  
 <sub>(Scene Parsing + Construction + GPU Upload + First Frame Rendering)</sub>
 
 ### *Bunny*
 
-<img src="/sample_images/bunny_interactive.gif" alt="bunny" width="500"/>
+<img src="/sample_images/bunny_progressive.gif" alt="bunny" width="500"/>
 
 **Resolution:** 640 × 480  
-**Average FPS:** 55 ~ 60 FPS  
+**Average FPS:** 45 ~ 50 FPS  
 **Total Initialization Time:** *10.35 seconds*    
 <sub>(The bunny has 144,046 triangles!)<sub>
 
 ### *Buddha*
 
-<img src="/sample_images/buddha_interactive.gif" alt="buddha" width="500"/>
+<img src="/sample_images/buddha_progressive.gif" alt="buddha" width="500"/>
 
 **Resolution:** 640 × 480  
-**Average FPS:** 50 ~ 60 FPS  
+**Average FPS:** 40 FPS  
 **Total Initialization Time:** *56.53 seconds*    
 <sub>(The Buddha has 1,087,474 triangles!)<sub>
 
